@@ -1,0 +1,150 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irish Company Compliance Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 50%;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            text-align: center;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label, input, button, select {
+            margin: 10px 0;
+            padding: 8px;
+            width: 80%;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Irish Company Compliance Checker</h1>
+        <form id="complianceForm">
+            <label for="incorporationDate">Date of Incorporation:</label>
+            <input type="date" id="incorporationDate" required>
+            
+            <label for="vatFrequency">VAT Filing Frequency:</label>
+            <select id="vatFrequency">
+                <option value="bi-monthly">Bi-Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="annually">Annually</option>
+            </select>
+            
+            <button type="submit">Calculate Key Dates</button>
+        </form>
+        <div id="results" class="hidden">
+            <h2>Key Compliance Dates:</h2>
+            <ul id="datesList"></ul>
+        </div>
+    </div>
+    <script>
+        document.getElementById('complianceForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const incorporationDate = new Date(document.getElementById('incorporationDate').value);
+            if (isNaN(incorporationDate)) {
+                alert('Please enter a valid date.');
+                return;
+            }
+            const results = calculateComplianceDates(incorporationDate);
+            displayResults(results);
+        });
+
+        function calculateComplianceDates(incorporationDate) {
+            const dates = [];
+            const today = new Date();
+
+            // Annual Return (Form B1)
+            const firstARD = new Date(incorporationDate);
+            firstARD.setMonth(firstARD.getMonth() + 6);
+            const firstB1Due = new Date(firstARD);
+            firstB1Due.setDate(firstB1Due.getDate() + 28);
+            if (firstB1Due >= today) {
+                dates.push({ name: 'First Annual Return (Form B1)', date: firstB1Due });
+            }
+
+            // Corporation Tax Return (Form CT1)
+            const accountingPeriodEnd = new Date(incorporationDate);
+            accountingPeriodEnd.setFullYear(accountingPeriodEnd.getFullYear() + 1);
+            const ct1Due = new Date(accountingPeriodEnd);
+            ct1Due.setMonth(ct1Due.getMonth() + 9);
+            ct1Due.setDate(23);
+            if (ct1Due >= today) {
+                dates.push({ name: 'Corporation Tax Return (Form CT1)', date: ct1Due });
+            }
+
+            // VAT Returns Based on User Selection
+            const vatFrequency = document.getElementById("vatFrequency").value;
+
+            function addVatReturn(periodEnd) {
+                const vatEnd = new Date(incorporationDate);
+                vatEnd.setMonth(periodEnd);
+                vatEnd.setDate(0);
+                const vatDue = new Date(vatEnd);
+                vatDue.setDate(19);
+                if (vatDue >= today) {
+                    dates.push({ name: `VAT Return for ${vatEnd.toLocaleString('default', { month: 'long' })}`, date: vatDue });
+                }
+            }
+
+            if (vatFrequency === "bi-monthly") {
+                [1, 3, 5, 7, 9, 11].forEach(addVatReturn);
+            } else if (vatFrequency === "quarterly") {
+                [2, 5, 8, 11].forEach(addVatReturn);
+            } else if (vatFrequency === "annually") {
+                const vatAnnual = new Date(incorporationDate);
+                vatAnnual.setFullYear(vatAnnual.getFullYear() + 1);
+                vatAnnual.setMonth(11);
+                vatAnnual.setDate(31);
+                const vatDue = new Date(vatAnnual);
+                vatDue.setDate(19);
+                if (vatDue >= today) {
+                    dates.push({ name: `VAT Return (Annual)`, date: vatDue });
+                }
+            }
+
+            return dates;
+        }
+
+        function displayResults(dates) {
+            const datesList = document.getElementById('datesList');
+            datesList.innerHTML = '';
+            dates.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${item.name}: ${item.date.toDateString()}`;
+                datesList.appendChild(listItem);
+            });
+            document.getElementById('results').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
